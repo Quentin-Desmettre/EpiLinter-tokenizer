@@ -1,0 +1,39 @@
+name: "Build WebSocket server and restart it"
+on:
+  push:
+    branches:
+      - main
+jobs:
+  # test:
+  #   ...
+  deploy:
+    name: "Deploy to VPS"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    # needs: test
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "$SSH_KEY" > ~/.ssh/staging.key
+          chmod 600 ~/.ssh/staging.key
+          cat >>~/.ssh/config <<END
+          Host staging
+            HostName $SSH_HOST
+            User $SSH_USER
+            IdentityFile ~/.ssh/staging.key
+            StrictHostKeyChecking no
+          END
+        env:
+          SSH_USER: ${{ secrets.STAGING_SSH_USER }}
+          SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
+
+      - name: test
+        run: touch /home/ubuntu/la-pipeline-est-ok
+      # - name: Pull & build the source
+      #   run: ssh staging 'cd /home/ubuntu/EpiLinter-tokenizer && git pull && make'
+
+      # - name: Restart the server
+      #   run: ssh staging 'sudo kill -KILL $(pidof cppTokenizer) ; cd /home/ubuntu/EpiLinter-tokenizer/build && ./cppTokenizer'
+
