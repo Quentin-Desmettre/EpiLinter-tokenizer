@@ -32,5 +32,5 @@ jobs:
         run: ssh staging 'cd /home/ubuntu/EpiLinter-tokenizer && git pull && make'
 
       - name: Restart the server
-        run: ssh staging 'sudo kill -KILL $(pidof cppTokenizer) ; cd /home/ubuntu/EpiLinter-tokenizer/build && ./cppTokenizer &'
+        run: ssh staging 'sudo systemctl restart epi-tokenizer'
 
