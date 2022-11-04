@@ -1,9 +1,9 @@
 #include "server.h"
-#include <QApplication>
+#include <QCoreApplication>
 
 int main(int ac, char **av)
 {
-    QApplication app(ac, av);
+    QCoreApplication app(ac, av);
     Server serv(8081);
     return app.exec();
 }
