@@ -2,6 +2,8 @@ QT += \
     websockets \
     core
 
+INCLUDEPATH += include
+
 HEADERS += \
     include/server.h \
     include/tokenizer.h
