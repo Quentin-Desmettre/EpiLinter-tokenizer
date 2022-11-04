@@ -30,7 +30,7 @@ jobs:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
       - name: test
-        run: touch /home/ubuntu/la-pipeline-est-ok
+        run: ssh staging 'touch /home/ubuntu/la-pipeline-est-ok'
       # - name: Pull & build the source
       #   run: ssh staging 'cd /home/ubuntu/EpiLinter-tokenizer && git pull && make'
 
