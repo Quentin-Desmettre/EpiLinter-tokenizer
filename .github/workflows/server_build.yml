@@ -28,11 +28,9 @@ jobs:
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
-      - name: test
-        run: ssh staging 'touch /home/ubuntu/la-pipeline-est-ok'
-      # - name: Pull & build the source
-      #   run: ssh staging 'cd /home/ubuntu/EpiLinter-tokenizer && git pull && make'
+      - name: Pull & build the source
+        run: ssh staging 'cd /home/ubuntu/EpiLinter-tokenizer && git pull && make'
 
-      # - name: Restart the server
-      #   run: ssh staging 'sudo kill -KILL $(pidof cppTokenizer) ; cd /home/ubuntu/EpiLinter-tokenizer/build && ./cppTokenizer'
+      - name: Restart the server
+        run: ssh staging 'sudo kill -KILL $(pidof cppTokenizer) ; cd /home/ubuntu/EpiLinter-tokenizer/build && ./cppTokenizer &'
 
