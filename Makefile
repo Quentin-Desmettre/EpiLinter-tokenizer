@@ -1,5 +1,5 @@
-DOT_PRO_FILE = cppTokenizer.pro
-BINARY_NAME = cppTokenizer
+DOT_PRO_FILE = epi-tokenizer.pro
+BINARY_NAME = epi-tokenizer
 
 all:
 	rm -rf build && mkdir build
