@@ -630,8 +630,8 @@ QString Tokenizer::getTokens(QString file_content)
     for (const auto &token: tokens)
         result += (token.value_ + "\1" + std::to_string(token.line_) + "\1" + std::to_string(token.column_) + "\1" + token.name_ + "\2");
 
-    QFile file (file_name);
-    file.remove();
+    QFile new_file (file_name);
+    new_file.remove();
 
     qDebug() << "Sending\n";
     return QString::fromStdString(result);
