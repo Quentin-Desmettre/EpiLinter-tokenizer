@@ -618,7 +618,7 @@ std::vector<Token> getEveryTokenInFile(std::string const &file)
 
 QString Tokenizer::getTokens(QString file_content)
 {
-    QString file_name = "out.txt." + QUuid::createUuid().toString();
+    QString file_name = "/tmp/epi-tokens" + QUuid::createUuid().toString();
     QFile file(file_name);
     file.open(QIODevice::WriteOnly | QIODevice::Text);
     QTextStream out(&file);
@@ -629,6 +629,10 @@ QString Tokenizer::getTokens(QString file_content)
     std::string result = "";
     for (const auto &token: tokens)
         result += (token.value_ + "\1" + std::to_string(token.line_) + "\1" + std::to_string(token.column_) + "\1" + token.name_ + "\2");
+
+    QFile file (file_name);
+    file.remove();
+
     qDebug() << "Sending\n";
     return QString::fromStdString(result);
 }
