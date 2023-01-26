@@ -608,7 +608,6 @@ TokenSequence getTokens(const std::string & fileName,
 std::vector<Token> getEveryTokenInFile(std::string const &file)
 {
     return getTokens(file, 1, 0, -1, -1, {});
-    "{";
 }
 
 #include "tokenizer.h"
@@ -633,6 +632,5 @@ QString Tokenizer::getTokens(QString file_content)
     QFile new_file (file_name);
     new_file.remove();
 
-    qDebug() << "Sending\n";
     return QString::fromStdString(result);
 }

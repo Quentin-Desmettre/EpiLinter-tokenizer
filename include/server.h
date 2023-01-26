@@ -9,9 +9,10 @@ class Server : public QObject
     Q_OBJECT
 private:
     QWebSocketServer *m_pWebSocketServer;
+    bool _isDebug;
 
 public:
-    explicit Server(quint16 port, QObject *parent = nullptr);
+    explicit Server(quint16 port, bool isDebug, QObject *parent = nullptr);
 
 public slots:
     void onNewConnection();
