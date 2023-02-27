@@ -38,6 +38,7 @@ void Server::processTextMessage(QString message)
 
 void Server::socketDisconnected()
 {
+    std::cout << "Socket disconnected" << std::endl;
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     if (pClient)
         pClient->deleteLater();
