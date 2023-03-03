@@ -570,6 +570,6 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
         }
     }
     fileTokens_.erase(fileName);
-    physicalTokens.clear();
+    physicalTokens = {};
     return ret;
 }
