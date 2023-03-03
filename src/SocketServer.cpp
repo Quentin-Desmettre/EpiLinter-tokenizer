@@ -19,7 +19,6 @@ void on_message(server* s, websocketpp::connection_hdl hdl, message_ptr msg)
     }
 
     try {
-        std::cout << Tokenizer::getTokens(msg->get_payload()) << std::endl;
         s->send(hdl, Tokenizer::getTokens(msg->get_payload()), msg->get_opcode());
     } catch (websocketpp::exception const & e) {
         if (SocketServer::_debug) {
@@ -38,6 +37,7 @@ int SocketServer::run(uint16_t port)
     server echo_server;
 
     try {
+        echo_server.set_reuse_addr(true);
         // Set logging settings
         echo_server.set_access_channels(websocketpp::log::alevel::all);
         echo_server.clear_access_channels(websocketpp::log::alevel::frame_payload);
