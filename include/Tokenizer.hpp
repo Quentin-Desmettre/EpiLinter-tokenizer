@@ -37,6 +37,7 @@ public:
     static std::string getTokens(const std::string &file_content);
 private:
     static std::vector<Token> getEveryTokenInFile(std::string const &file);
+    static std::string generatedUid(int depth = 1);
 };
 
 #endif // TOKENIZER_H

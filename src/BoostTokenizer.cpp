@@ -23,7 +23,9 @@ TokenSequence getTokens(const std::string & fileName,
     const FilterSequence & filter);
 boost::wave::token_id tokenIdFromTokenFilter(const TokenFilter & filter);
 typedef std::vector<std::string> PhysicalTokenCollection;
+
 PhysicalTokenCollection physicalTokens;
+std::mutex physicalTokensMutex;
 
 struct TokenRef
 {
@@ -504,6 +506,8 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
     int fromLine, int fromColumn, int toLine, int toColumn,
     const FilterSequence & filter)
 {
+    const std::lock_guard<std::mutex> lock(physicalTokensMutex);
+
     if ((fromLine < 1) ||
         (fromColumn < 0) ||
         (toLine > 0 && fromLine > toLine) ||
@@ -566,5 +570,6 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
         }
     }
     fileTokens_.erase(fileName);
+    physicalTokens.clear();
     return ret;
 }
