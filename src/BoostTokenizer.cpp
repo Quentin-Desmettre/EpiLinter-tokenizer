@@ -1,15 +1,11 @@
-#include "qdebug.h"
-#include <string>
-#include <iostream>
-#include <vector>
-#include <map>
-#include <boost/wave.hpp>
-#include <boost/wave/cpplexer/cpp_lex_token.hpp>
-#include <boost/wave/cpplexer/cpp_lex_iterator.hpp>
-#include <boost/wave/cpplexer/cpplexer_exceptions.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/function.hpp>
-#include <boost/bind.hpp>
+/*
+** EPITECH PROJECT, 2023
+** EpiLinter-tokenizer
+** File description:
+** BoostTokenizer
+*/
+
+#include "BoostTokenizer.hpp"
 
 int getLineCount(const std::string & name);
 const std::vector<std::string> & getAllLines(const std::string & name);
@@ -19,46 +15,13 @@ void loadFile(std::istream & file, const std::string & name);
 void parse(const std::string & name, const std::string & src);
 bool matchAll(boost::wave::token_id);
 bool matchTokenBaseId(boost::wave::token_id id, boost::wave::token_id ref);
-
-typedef std::string TokenFilter;
-typedef std::vector<TokenFilter> FilterSequence;
 typedef std::vector<boost::function<bool (boost::wave::token_id)> > CompiledFilterSequence;
 CompiledFilterSequence prepareCompiledFilter(const FilterSequence & filterSeq);
 bool match(const CompiledFilterSequence & compiledFilter, boost::wave::token_id id);
-
-
-struct Token
-{
-    Token(const std::string & v, int ln, int cl, const std::string & n)
-        : value_(v), line_(ln), column_(cl), name_(n) {}
-
-    Token()
-        : value_(""), line_(0), column_(0), name_("") {}
-
-    bool operator==(Token const& t) const
-    {
-      return value_ == t.value_
-          && line_ == t.line_
-          && column_ == t.column_
-          && name_ == t.name_;
-    }
-
-    std::string value_;
-    int line_;
-    int column_;
-    std::string name_;
-};
-
-typedef std::vector<Token> TokenSequence;
-
 TokenSequence getTokens(const std::string & fileName,
     int fromLine, int fromColumn, int toLine, int toColumn,
     const FilterSequence & filter);
-
 boost::wave::token_id tokenIdFromTokenFilter(const TokenFilter & filter);
-
-
-
 typedef std::vector<std::string> PhysicalTokenCollection;
 PhysicalTokenCollection physicalTokens;
 
@@ -536,7 +499,8 @@ bool match(const CompiledFilterSequence & compiledFilter, boost::wave::token_id 
 
     return false;
 }
-TokenSequence getTokens(const std::string & fileName,
+
+TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
     int fromLine, int fromColumn, int toLine, int toColumn,
     const FilterSequence & filter)
 {
@@ -601,36 +565,6 @@ TokenSequence getTokens(const std::string & fileName,
             }
         }
     }
-
+    fileTokens_.erase(fileName);
     return ret;
-}
-
-std::vector<Token> getEveryTokenInFile(std::string const &file)
-{
-    return getTokens(file, 1, 0, -1, -1, {});
-}
-
-#include "tokenizer.h"
-#include <QFile>
-#include <QUuid>
-#include <QTextStream>
-
-QString Tokenizer::getTokens(QString file_content)
-{
-    QString file_name = "/tmp/epi-tokens" + QUuid::createUuid().toString();
-    QFile file(file_name);
-    file.open(QIODevice::WriteOnly | QIODevice::Text);
-    QTextStream out(&file);
-    out << file_content;
-    file.close();
-
-    auto tokens = getEveryTokenInFile(file_name.toStdString());
-    std::string result = "";
-    for (const auto &token: tokens)
-        result += (token.value_ + "\1" + std::to_string(token.line_) + "\1" + std::to_string(token.column_) + "\1" + token.name_ + "\2");
-
-    QFile new_file (file_name);
-    new_file.remove();
-
-    return QString::fromStdString(result);
 }

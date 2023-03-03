@@ -1,11 +1,32 @@
-DOT_PRO_FILE = epi-tokenizer.pro
-BINARY_NAME = epi-tokenizer
+##
+## EPITECH PROJECT, 2022
+## EpiLinter-tokenizer
+## File description:
+## Makefile
+##
 
-all:
-	rm -rf build && mkdir build
-	cd build && qmake ../$(DOT_PRO_FILE) && make -s
+CXX = g++
+CXXFLAGS = -Wall -Wextra -I include -std=c++17 -L /usr/lib64/ -lboost_wave -lpthread
 
-run-prod:
-	cd build && ./$(BINARY_NAME) &
-run-dev:
-	cd build && ./$(BINARY_NAME) --debug &
+SRC = \
+	src/main.cpp \
+	src/SocketServer.cpp \
+	src/Tokenizer.cpp \
+	src/BoostTokenizer.cpp
+
+OBJ = $(SRC:.cpp=.o)
+
+NAME = epi-tokenizer
+
+all: $(NAME)
+
+clean:
+	rm -f $(OBJ)
+
+fclean: clean
+	rm -f $(NAME)
+
+re: fclean all
+
+$(NAME): $(OBJ)
+	$(CXX) -o $(NAME) $(OBJ) $(CXXFLAGS)

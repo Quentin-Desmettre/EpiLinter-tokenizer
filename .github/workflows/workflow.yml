@@ -35,3 +35,20 @@ jobs:
       - name: Restart the server
         run: ssh staging 'sudo systemctl restart epi-tokenizer'
 
+  publish:
+    name: "Build and publish new Docker Image"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker-practice/actions-setup-docker@master
+        timeout-minutes: 12
+
+      - name: "Login to DockerHub"
+        run: |
+          echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u qudes --password-stdin
+
+      - name: "Build image"
+        run: |
+          docker build -t qudes/epitokenizer:latest .
+          docker push qudes/epitokenizer:latest
+
+
