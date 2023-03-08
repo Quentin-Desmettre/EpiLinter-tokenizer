@@ -7,12 +7,14 @@
 
 #include "BoostTokenizer.hpp"
 
+typedef std::vector<std::string> PhysicalTokenCollection;
+
 int getLineCount(const std::string & name);
-const std::vector<std::string> & getAllLines(const std::string & name);
-const std::string & getLine(const std::string & name, int lineNumber);
-void loadFile(const std::string & name);
-void loadFile(std::istream & file, const std::string & name);
-void parse(const std::string & name, const std::string & src);
+const std::vector<std::string> & getAllLines(const std::string & name, PhysicalTokenCollection &physicalTokens);
+const std::string & getLine(const std::string & name, int lineNumber, PhysicalTokenCollection &physicalTokens);
+void loadFile(const std::string & name, PhysicalTokenCollection &physicalTokens);
+void loadFile(std::istream & file, const std::string & name, PhysicalTokenCollection &physicalTokens);
+void parse(const std::string & name, const std::string & src, PhysicalTokenCollection &physicalTokens);
 bool matchAll(boost::wave::token_id);
 bool matchTokenBaseId(boost::wave::token_id id, boost::wave::token_id ref);
 typedef std::vector<boost::function<bool (boost::wave::token_id)> > CompiledFilterSequence;
@@ -22,28 +24,22 @@ TokenSequence getTokens(const std::string & fileName,
     int fromLine, int fromColumn, int toLine, int toColumn,
     const FilterSequence & filter);
 boost::wave::token_id tokenIdFromTokenFilter(const TokenFilter & filter);
-typedef std::vector<std::string> PhysicalTokenCollection;
-
-PhysicalTokenCollection physicalTokens;
-std::mutex physicalTokensMutex;
 
 struct TokenRef
 {
-    TokenRef(boost::wave::token_id id, int line, int column, int length)
-        : id_(id), line_(line), column_(column), length_(length), index_(-1) {}
+    TokenRef(boost::wave::token_id id, int line, int column, int length, PhysicalTokenCollection &physicalTokens)
+        : id_(id), line_(line), column_(column), length_(length), index_(-1), _physicalTokens(physicalTokens) {}
 
-    TokenRef(boost::wave::token_id id, int line, int column, int length, const std::string & value)
-        : id_(id), line_(line), column_(column), length_(length)
+    TokenRef(boost::wave::token_id id, int line, int column, int length, const std::string & value, PhysicalTokenCollection &physicalTokens)
+        : id_(id), line_(line), column_(column), length_(length), _physicalTokens(physicalTokens)
     {
         // newline is optimized as the most common case
 
         if (id_ != boost::wave::T_NEWLINE)
         {
-            // value of the token is stored in physicalTokens collection
-            // (because it has no physical representation in the source code)
 
-            index_ = static_cast<int>(physicalTokens.size());
-            physicalTokens.push_back(value);
+            index_ = static_cast<int>(_physicalTokens.size());
+            _physicalTokens.push_back(value);
         }
     }
 
@@ -55,17 +51,14 @@ struct TokenRef
         }
         else if (index_ >= 0)
         {
-            // token value stored in the physicalTokens structure
-            // (this is used with line continuation and other cases
-            // where the token has no representation in physical lines)
 
-            return physicalTokens[static_cast<size_t>(index_)];
+            return _physicalTokens[static_cast<size_t>(index_)];
         }
         else
         {
             // token value has to be retrieved from the physical line collection
 
-            return getLine(fileName, line_).substr(column_, length_);
+            return getLine(fileName, line_, _physicalTokens).substr(column_, length_);
         }
     }
 
@@ -73,16 +66,13 @@ struct TokenRef
     int line_;
     int column_;
     int length_;
-
-    // if >= 0, it is the index into the physicalTokens collection,
-    // used only for line continuation
-    // and when line_ and column_ do not reflect the physical layout:
     int index_;
+    PhysicalTokenCollection &_physicalTokens;
 };
 
 typedef std::vector<TokenRef> TokenCollection;
 void findRange(const TokenCollection & tokens, int fromLine, int toLine,
-    TokenCollection::const_iterator & beg, TokenCollection::const_iterator & end);
+    TokenCollection::const_iterator & beg, TokenCollection::const_iterator & end, PhysicalTokenCollection &physicalTokens);
 
 
 typedef std::map<std::string, std::vector<std::string>> SourceFileCollection;
@@ -91,12 +81,12 @@ SourceFileCollection sources_;
 typedef std::map<std::string, TokenCollection> FileTokenCollection;
 FileTokenCollection fileTokens_;
 
-int getLineCount(const std::string & name)
+int getLineCount(const std::string & name, PhysicalTokenCollection &physicalTokens)
 {
-    return static_cast<int>(getAllLines(name).size());
+    return static_cast<int>(getAllLines(name, physicalTokens).size());
 }
 
-const std::vector<std::string> & getAllLines(const std::string & name)
+const std::vector<std::string> & getAllLines(const std::string & name, PhysicalTokenCollection &physicalTokens)
 {
     const SourceFileCollection::const_iterator it = sources_.find(name);
     if (it != sources_.end())
@@ -106,13 +96,13 @@ const std::vector<std::string> & getAllLines(const std::string & name)
     else
     {
         // lazy load of the source file
-        loadFile(name);
+        loadFile(name, physicalTokens);
         return sources_[name];
     }
 }
-const std::string & getLine(const std::string & name, int lineNumber)
+const std::string & getLine(const std::string & name, int lineNumber, PhysicalTokenCollection &physicalTokens)
 {
-    const std::vector<std::string> & lines = getAllLines(name);
+    const std::vector<std::string> & lines = getAllLines(name, physicalTokens);
     if (lineNumber < 1 || lineNumber > static_cast<int>(lines.size()))
     {
         std::cerr << "Requested wrong line number: " << lineNumber << '\n';
@@ -123,16 +113,16 @@ const std::string & getLine(const std::string & name, int lineNumber)
     return lines[lineNumber - 1];
 }
 
-void loadFile(const std::string & name)
+void loadFile(const std::string & name, PhysicalTokenCollection &physicalTokens)
 {
     if (name == "-")
     {
-        loadFile(std::cin, name);
+        loadFile(std::cin, name, physicalTokens);
     }
     else
     {
         std::ifstream file(name.c_str());
-        loadFile(file, name);
+        loadFile(file, name, physicalTokens);
         if (file.bad())
         {
             throw std::runtime_error(
@@ -140,7 +130,7 @@ void loadFile(const std::string & name)
         }
     }
 }
-void loadFile(std::istream & file, const std::string & name)
+void loadFile(std::istream & file, const std::string & name, PhysicalTokenCollection &physicalTokens)
 {
     std::vector<std::string> &lines = sources_[name];
 
@@ -164,10 +154,10 @@ void loadFile(std::istream & file, const std::string & name)
         }
     }
 
-    parse(name, fullSource);
+    parse(name, fullSource, physicalTokens);
 }
 
-void parse(const std::string & name, const std::string & src)
+void parse(const std::string & name, const std::string & src, PhysicalTokenCollection &physicalTokens)
 {
     TokenCollection & tokensInFile = fileTokens_[name];
 
@@ -188,7 +178,7 @@ void parse(const std::string & name, const std::string & src)
             const lexer_type end = lexer_type();
 
             // Number of lines inside this file
-            const int lineCount = getLineCount(name);
+            const int lineCount = getLineCount(name, physicalTokens);
 
             // For each element in the iterator
             for ( ; it != end; ++it)
@@ -210,7 +200,7 @@ void parse(const std::string & name, const std::string & src)
                 }
                 else
                 {
-                    const std::string & sourceLine = getLine(name, line);
+                    const std::string & sourceLine = getLine(name, line, physicalTokens);
                     if (column > static_cast<int>(sourceLine.size()) ||
                         value != sourceLine.substr(column, length))
                     {
@@ -222,14 +212,11 @@ void parse(const std::string & name, const std::string & src)
                 {
                     // the reference representation of the token is stored
 
-                    tokensInFile.push_back(TokenRef(id, line, column, length));
+                    tokensInFile.push_back(TokenRef(id, line, column, length, physicalTokens));
                 }
                 else
                 {
-                    // value of the token has no representation in the physical line
-                    // so the real token value is stored in physicalTokens
-
-                    tokensInFile.push_back(TokenRef(id, line, column, length, value));
+                    tokensInFile.push_back(TokenRef(id, line, column, length, value, physicalTokens));
                 }
             }
         }
@@ -470,9 +457,9 @@ struct LineNumberComparator
     }
 };
 void findRange(const TokenCollection & tokens, int fromLine, int toLine,
-    TokenCollection::const_iterator & beg, TokenCollection::const_iterator & end)
+    TokenCollection::const_iterator & beg, TokenCollection::const_iterator & end, PhysicalTokenCollection &physicalTokens)
 {
-    const TokenRef tokenToCompareFrom(boost::wave::token_id(), fromLine, 0, 0);
+    const TokenRef tokenToCompareFrom(boost::wave::token_id(), fromLine, 0, 0, physicalTokens);
     beg = lower_bound(tokens.begin(), tokens.end(), tokenToCompareFrom, LineNumberComparator());
 
     if (toLine < 0)
@@ -481,7 +468,7 @@ void findRange(const TokenCollection & tokens, int fromLine, int toLine,
     }
     else
     {
-        const TokenRef tokenToCompareTo(boost::wave::token_id(), toLine, 0, 0);
+        const TokenRef tokenToCompareTo(boost::wave::token_id(), toLine, 0, 0, physicalTokens);
         end = upper_bound(tokens.begin(), tokens.end(), tokenToCompareTo, LineNumberComparator());
     }
 }
@@ -506,8 +493,7 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
     int fromLine, int fromColumn, int toLine, int toColumn,
     const FilterSequence & filter)
 {
-    const std::lock_guard<std::mutex> lock(physicalTokensMutex);
-
+    PhysicalTokenCollection physicalTokens;
     if ((fromLine < 1) ||
         (fromColumn < 0) ||
         (toLine > 0 && fromLine > toLine) ||
@@ -521,7 +507,7 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
         const FileTokenCollection::const_iterator fit = fileTokens_.find(fileName);
         if (fit == fileTokens_.end())
         {
-            loadFile(fileName);
+            loadFile(fileName, physicalTokens);
         }
     }
 
@@ -537,7 +523,7 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
     TokenCollection::const_iterator begin;
     TokenCollection::const_iterator end;
 
-    findRange(tokensInFile, fromLine, toLine, begin, end);
+    findRange(tokensInFile, fromLine, toLine, begin, end, physicalTokens);
 
     if (begin != tokensInFile.begin())
         std::cerr << "begin differs" << std::endl;
@@ -570,6 +556,6 @@ TokenSequence BoostTokenizer::getTokens(const std::string & fileName,
         }
     }
     fileTokens_.erase(fileName);
-    physicalTokens = {};
+    sources_.erase(fileName);
     return ret;
 }
