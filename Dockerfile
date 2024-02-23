@@ -11,10 +11,8 @@ RUN apt-get update -y && apt-get install -y \
 
 # Install EpiLinter-tokenizer
 RUN mkdir EpiLinter-tokenizer
-COPY . /root/EpiLinter-tokenizer
-RUN \
-    cd EpiLinter-tokenizer \
-    && make re
+COPY . .
+RUN make re
 
 EXPOSE 8081
 CMD ./epi-tokenizer

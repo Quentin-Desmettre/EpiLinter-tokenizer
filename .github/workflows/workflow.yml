@@ -30,8 +30,8 @@ jobs:
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
-      - name: Push the source code to the server
-        run: scp -i ~/.ssh/staging.key -r ./* ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:${{ env.TOKENIZER_PATH }}
+      - name: Pull the source code on the server
+        run: ssh staging 'cd ${{ env.TOKENIZER_PATH }} && git fetch && git reset --hard origin/main'
 
       - name: Restart the server
         run: ssh staging 'cd ${{ env.TOKENIZER_PATH }} && docker-compose down --remove && docker-compose up -d --build'
