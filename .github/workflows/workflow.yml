@@ -30,5 +30,8 @@ jobs:
           SSH_KEY: ${{ secrets.STAGING_SSH_KEY }}
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
-      - name: Pull & build the source
-        run: ssh staging 'cd ${{ env.TOKENIZER_PATH }} && git pull && docker-compose down --remove && docker-compose up -d --build'
+      - name: Push the source code to the server
+        run: scp -r ./* ${{ secrets.STAGING_SSH_USER }}@${{ secrets.STAGING_SSH_HOST }}:${{ env.TOKENIZER_PATH }}
+
+      - name: Restart the server
+        run: ssh staging 'cd ${{ env.TOKENIZER_PATH }} && docker-compose down --remove && docker-compose up -d --build'
