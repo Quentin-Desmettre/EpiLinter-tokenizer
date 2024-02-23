@@ -1,0 +1,11 @@
+version: '3'
+services:
+  epi-tokenizer:
+    build: .
+    ports:
+      - 8081:8081
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 50m

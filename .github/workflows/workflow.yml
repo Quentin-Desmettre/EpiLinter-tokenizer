@@ -3,13 +3,14 @@ on:
   push:
     branches:
       - main
+
+env:
+  TOKENIZER_PATH: /home/quentin/EpiLinter-tokenizer
+
 jobs:
-  # test:
-  #   ...
   deploy:
     name: "Deploy to VPS"
     runs-on: ubuntu-latest
-    # needs: test
     steps:
       - name: Configure SSH
         run: |
@@ -30,28 +31,4 @@ jobs:
           SSH_HOST: ${{ secrets.STAGING_SSH_HOST }}
 
       - name: Pull & build the source
-        run: ssh staging 'cd /home/ubuntu/EpiLinter-tokenizer && git pull && make'
-
-      - name: Restart the server
-        run: ssh staging 'sudo systemctl restart epi-tokenizer'
-
-  publish:
-    name: "Build and publish new Docker Image"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: docker-practice/actions-setup-docker@master
-        timeout-minutes: 12
-      - uses: actions/checkout@v3
-        with:
-          ref: main
-
-      - name: "Login to DockerHub"
-        run: |
-          echo ${{ secrets.DOCKER_HUB_PASSWORD }} | docker login -u qudes --password-stdin
-
-      - name: "Build image"
-        run: |
-          docker build -t qudes/epitokenizer:latest .
-          docker push qudes/epitokenizer:latest
-
-
+        run: ssh staging 'cd ${{ env.TOKENIZER_PATH }} && git pull && docker-compose down --remove && docker-compose up -d --build'

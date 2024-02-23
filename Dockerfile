@@ -14,17 +14,7 @@ RUN mkdir EpiLinter-tokenizer
 COPY . /root/EpiLinter-tokenizer
 RUN \
     cd EpiLinter-tokenizer \
-    && make re && make clean \
-    && apt-get remove -y \
-        g++ \
-        make \
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && apt-get autoclean -y \
-    && apt-get purge -y \
-    && cp epi-tokenizer .. \
-    && cd .. \
-    && rm -rf EpiLinter-tokenizer
+    && make re
 
 EXPOSE 8081
 CMD ./epi-tokenizer
